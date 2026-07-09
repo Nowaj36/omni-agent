@@ -6,6 +6,7 @@ export const TASK_TYPES = [
   'ner',
   'codegen',
   'debug',
+  'reasoning',
 ] as const;
 
 export type TaskType = (typeof TASK_TYPES)[number];
@@ -72,6 +73,10 @@ export interface CodeDebuggingOutput {
   readonly fixedCode: string;
 }
 
+export interface ReasoningOutput {
+  readonly answer: string;
+}
+
 export type TaskOutput =
   | QaOutput
   | SummarizationOutput
@@ -79,7 +84,8 @@ export type TaskOutput =
   | MathOutput
   | NerOutput
   | CodeGenerationOutput
-  | CodeDebuggingOutput;
+  | CodeDebuggingOutput
+  | ReasoningOutput;
 
 export interface VerificationReport {
   readonly passed: boolean;

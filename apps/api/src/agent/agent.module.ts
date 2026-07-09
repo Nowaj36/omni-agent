@@ -9,6 +9,7 @@ import { AgentOrchestrator } from './application/agent-orchestrator';
 import { ClassificationCapability } from './application/capabilities/classification.capability';
 import { CodeDebuggingCapability } from './application/capabilities/code-debugging.capability';
 import { CodeGenerationCapability } from './application/capabilities/code-generation.capability';
+import { LogicalReasoningCapability } from './application/capabilities/logical-reasoning.capability';
 import { MathCapability } from './application/capabilities/math.capability';
 import { NamedEntityRecognitionCapability } from './application/capabilities/ner.capability';
 import { QaCapability } from './application/capabilities/qa.capability';
@@ -27,6 +28,7 @@ import { VerificationEngine } from './application/verification-engine';
     NamedEntityRecognitionCapability,
     CodeDebuggingCapability,
     CodeGenerationCapability,
+    LogicalReasoningCapability,
     {
       provide: CAPABILITIES,
       useFactory: (
@@ -34,6 +36,7 @@ import { VerificationEngine } from './application/verification-engine';
         ner: NamedEntityRecognitionCapability,
         debug: CodeDebuggingCapability,
         codegen: CodeGenerationCapability,
+        reasoning: LogicalReasoningCapability,
         math: MathCapability,
         summarization: SummarizationCapability,
         qa: QaCapability,
@@ -42,6 +45,7 @@ import { VerificationEngine } from './application/verification-engine';
         ner,
         debug,
         codegen,
+        reasoning,
         math,
         summarization,
         qa,
@@ -51,6 +55,7 @@ import { VerificationEngine } from './application/verification-engine';
         NamedEntityRecognitionCapability,
         CodeDebuggingCapability,
         CodeGenerationCapability,
+        LogicalReasoningCapability,
         MathCapability,
         SummarizationCapability,
         QaCapability,
