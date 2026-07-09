@@ -1,4 +1,10 @@
-export const TASK_TYPES = ['qa', 'summarization', 'classification'] as const;
+export const TASK_TYPES = [
+  'qa',
+  'summarization',
+  'classification',
+  'math',
+  'ner',
+] as const;
 
 export type TaskType = (typeof TASK_TYPES)[number];
 
@@ -21,7 +27,36 @@ export interface ClassificationOutput {
   readonly label: string;
 }
 
-export type TaskOutput = QaOutput | SummarizationOutput | ClassificationOutput;
+export interface MathOutput {
+  readonly result: string;
+}
+
+export const ENTITY_TYPES = [
+  'person',
+  'organization',
+  'location',
+  'date',
+  'email',
+  'phone',
+] as const;
+
+export type EntityType = (typeof ENTITY_TYPES)[number];
+
+export interface NamedEntity {
+  readonly text: string;
+  readonly type: EntityType;
+}
+
+export interface NerOutput {
+  readonly entities: readonly NamedEntity[];
+}
+
+export type TaskOutput =
+  | QaOutput
+  | SummarizationOutput
+  | ClassificationOutput
+  | MathOutput
+  | NerOutput;
 
 export interface VerificationReport {
   readonly passed: boolean;
