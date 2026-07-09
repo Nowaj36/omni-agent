@@ -147,6 +147,93 @@ describe('HybridLlmProvider', () => {
     });
   });
 
+  describe('confidence fallback', () => {
+    function jsonRequest(capability: TaskType): CompletionRequest {
+      return {
+        system: 'system',
+        prompt: 'prompt',
+        jsonOutput: true,
+        capability,
+      };
+    }
+
+    it('keeps a confident local response without falling back', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"label": "spam"}',
+      );
+
+      const result = await hybrid.complete(jsonRequest('classification'));
+
+      expect(result).toEqual({ text: '{"label": "spam"}' });
+      expect(localComplete).toHaveBeenCalledTimes(1);
+      expect(fireworksComplete).not.toHaveBeenCalled();
+    });
+
+    it('falls back to Fireworks on an uncertain local response', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({
+        text: '{"label": "I cannot determine the category"}',
+      });
+      fireworksComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+
+      const result = await hybrid.complete(jsonRequest('classification'));
+
+      expect(result).toEqual({ text: '{"label": "spam"}' });
+      expect(fireworksComplete).toHaveBeenCalledWith(
+        jsonRequest('classification'),
+      );
+    });
+
+    it('falls back to Fireworks on an empty local response', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({ text: '' });
+      fireworksComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+
+      const result = await hybrid.complete(jsonRequest('classification'));
+
+      expect(result).toEqual({ text: '{"label": "spam"}' });
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to Fireworks on a placeholder local response', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({ text: '{"label": "N/A"}' });
+      fireworksComplete.mockResolvedValue({ text: '{"label": "ham"}' });
+
+      const result = await hybrid.complete(jsonRequest('classification'));
+
+      expect(result).toEqual({ text: '{"label": "ham"}' });
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to Fireworks on an invalid structured local response', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({ text: 'sure, here is the label' });
+      fireworksComplete.mockResolvedValue({ text: '{"entities": []}' });
+
+      const result = await hybrid.complete(jsonRequest('ner'));
+
+      expect(result).toEqual({ text: '{"entities": []}' });
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns Fireworks responses as-is even when they read uncertain', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      fireworksComplete.mockResolvedValue({
+        text: '{"answer": "I cannot determine this from the context."}',
+      });
+
+      const result = await hybrid.complete(jsonRequest('qa'));
+
+      expect(result).toEqual({
+        text: '{"answer": "I cannot determine this from the context."}',
+      });
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+      expect(localComplete).not.toHaveBeenCalled();
+    });
+  });
+
   describe('fallback with a real local provider', () => {
     const originalFetch = global.fetch;
     let fetchMock: jest.Mock;
@@ -229,7 +316,138 @@ describe('HybridLlmProvider', () => {
     });
   });
 
-  describe('requests without a capability (verification passes)', () => {
+  describe('verification routing', () => {
+    function generationRequest(capability: TaskType): CompletionRequest {
+      return {
+        system: 'system',
+        prompt: 'prompt',
+        jsonOutput: true,
+        capability,
+      };
+    }
+
+    function verifyRequest(verifying: TaskType): CompletionRequest {
+      return {
+        system: 'verifier',
+        prompt: 'verify this output',
+        jsonOutput: true,
+        verifying,
+      };
+    }
+
+    it('verifies locally generated output on the local provider', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"label": "spam"}',
+      );
+
+      await hybrid.complete(generationRequest('classification'));
+      const verdict = await hybrid.complete(verifyRequest('classification'));
+
+      expect(verdict).toEqual({ text: '{"label": "spam"}' });
+      expect(localComplete).toHaveBeenCalledTimes(2);
+      expect(localComplete).toHaveBeenLastCalledWith(
+        verifyRequest('classification'),
+      );
+      expect(fireworksComplete).not.toHaveBeenCalled();
+    });
+
+    it('verifies Fireworks-generated output on Fireworks', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+
+      await hybrid.complete(generationRequest('qa'));
+      await hybrid.complete(verifyRequest('qa'));
+
+      expect(fireworksComplete).toHaveBeenCalledTimes(2);
+      expect(fireworksComplete).toHaveBeenLastCalledWith(verifyRequest('qa'));
+      expect(localComplete).not.toHaveBeenCalled();
+    });
+
+    it('verifies on Fireworks after a local transport fallback', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
+      fireworksComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+
+      await hybrid.complete(generationRequest('classification'));
+      await hybrid.complete(verifyRequest('classification'));
+
+      expect(fireworksComplete).toHaveBeenCalledTimes(2);
+      expect(fireworksComplete).toHaveBeenLastCalledWith(
+        verifyRequest('classification'),
+      );
+      expect(localComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('verifies on Fireworks after a local confidence fallback', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({ text: '{"label": "N/A"}' });
+      fireworksComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+
+      await hybrid.complete(generationRequest('classification'));
+      await hybrid.complete(verifyRequest('classification'));
+
+      expect(fireworksComplete).toHaveBeenCalledTimes(2);
+      expect(fireworksComplete).toHaveBeenLastCalledWith(
+        verifyRequest('classification'),
+      );
+      expect(localComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns verification to the local provider once local generation recovers', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValueOnce(
+        new ProviderError('Local LLM request failed'),
+      );
+      localComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+      fireworksComplete.mockResolvedValue({ text: '{"label": "spam"}' });
+
+      await hybrid.complete(generationRequest('classification'));
+      await hybrid.complete(generationRequest('classification'));
+      await hybrid.complete(verifyRequest('classification'));
+
+      expect(localComplete).toHaveBeenLastCalledWith(
+        verifyRequest('classification'),
+      );
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('follows the routing switch when no generation has been observed', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"passed": true, "feedback": ""}',
+      );
+
+      await hybrid.complete(verifyRequest('ner'));
+      await hybrid.complete(verifyRequest('qa'));
+
+      expect(localComplete).toHaveBeenCalledWith(verifyRequest('ner'));
+      expect(fireworksComplete).toHaveBeenCalledWith(verifyRequest('qa'));
+    });
+
+    it('falls back to Fireworks when the local verifier is unreachable', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"label": "spam"}',
+      );
+
+      await hybrid.complete(generationRequest('classification'));
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
+      fireworksComplete.mockResolvedValue({
+        text: '{"passed": true, "feedback": ""}',
+      });
+
+      const verdict = await hybrid.complete(verifyRequest('classification'));
+
+      expect(verdict).toEqual({ text: '{"passed": true, "feedback": ""}' });
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('requests without capability or verification tags', () => {
     it('delegates to Fireworks when LLM_PROVIDER is fireworks', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup('fireworks');
 

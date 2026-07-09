@@ -36,6 +36,7 @@ export class VerificationEngine {
       temperature: 0,
       maxTokens: VerificationEngine.MAX_VERDICT_TOKENS,
       jsonOutput: true,
+      verifying: taskType,
     });
 
     return this.parse(response.text);

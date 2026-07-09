@@ -8,6 +8,8 @@ export interface CompletionRequest {
   readonly jsonOutput?: boolean;
   /** Capability issuing the request; absent for verification calls. */
   readonly capability?: TaskType;
+  /** Capability whose generated output this request verifies. */
+  readonly verifying?: TaskType;
 }
 
 export interface CompletionResponse {

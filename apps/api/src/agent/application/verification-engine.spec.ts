@@ -39,6 +39,7 @@ describe('VerificationEngine', () => {
     const request = complete.mock.calls[0][0];
     expect(request.temperature).toBe(0);
     expect(request.jsonOutput).toBe(true);
+    expect(request.verifying).toBe('qa');
     expect(request.maxTokens).toBeLessThanOrEqual(256);
     expect(request.prompt).toContain('What is 2 + 2?');
     expect(request.prompt).toContain(JSON.stringify(output));
