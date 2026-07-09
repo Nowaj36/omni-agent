@@ -66,4 +66,35 @@ describe('envSchema', () => {
       ),
     ).toBe(true);
   });
+
+  it('defaults LLM_PROVIDER to fireworks and LOCAL_LLM_BASE_URL to localhost', () => {
+    const result = parseEnv('model-a');
+
+    expect(result.success).toBe(true);
+    expect(result.data?.LLM_PROVIDER).toBe('fireworks');
+    expect(result.data?.LOCAL_LLM_BASE_URL).toBe('http://localhost:8000/v1');
+  });
+
+  it('accepts LLM_PROVIDER=local', () => {
+    const result = envSchema.safeParse({
+      FIREWORKS_API_KEY: 'test-key',
+      ALLOWED_MODELS: 'model-a',
+      LLM_PROVIDER: 'local',
+      LOCAL_LLM_BASE_URL: 'http://vllm:8000/v1',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data?.LLM_PROVIDER).toBe('local');
+    expect(result.data?.LOCAL_LLM_BASE_URL).toBe('http://vllm:8000/v1');
+  });
+
+  it('rejects an unknown LLM_PROVIDER', () => {
+    const result = envSchema.safeParse({
+      FIREWORKS_API_KEY: 'test-key',
+      ALLOWED_MODELS: 'model-a',
+      LLM_PROVIDER: 'openai',
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

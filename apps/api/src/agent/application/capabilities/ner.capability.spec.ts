@@ -56,6 +56,15 @@ describe('NamedEntityRecognitionCapability', () => {
     }
   });
 
+  describe('verificationMode', () => {
+    it('is local because verbatim-span and type checks run in execute()', () => {
+      const { capability } = setup();
+      expect(capability.verificationMode({ input: 'Run NER on this' })).toBe(
+        'local',
+      );
+    });
+  });
+
   describe('execute', () => {
     const input =
       'Extract entities: John Smith works at Acme Corp in Paris. ' +

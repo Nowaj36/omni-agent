@@ -9,6 +9,7 @@ function capabilityStub(type: TaskType, matches: boolean): Capability {
     canHandle: () => matches,
     execute: () => Promise.resolve({ answer: 'stub' }),
     validate: () => ({ answer: 'stub' }),
+    verificationMode: () => 'llm',
   };
 }
 

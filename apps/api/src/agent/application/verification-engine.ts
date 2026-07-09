@@ -15,6 +15,10 @@ const verificationOutputSchema = z.object({
 
 @Injectable()
 export class VerificationEngine {
+  // The verdict is a small JSON object; capping it keeps a rambling verifier
+  // from spending output tokens.
+  private static readonly MAX_VERDICT_TOKENS = 256;
+
   constructor(@Inject(LLM_PROVIDER) private readonly llm: LlmProvider) {}
 
   async verify(
@@ -24,13 +28,13 @@ export class VerificationEngine {
   ): Promise<VerificationResult> {
     const response = await this.llm.complete({
       system:
-        'You are a strict quality verifier for an AI agent. ' +
-        'Evaluate whether the produced output correctly satisfies the task. ' +
-        'Respond with only a JSON object of the shape {"passed": boolean, "feedback": string}. ' +
-        'Set passed=true only if the output is correct, relevant, and complete; minor stylistic differences are acceptable. ' +
+        "You verify an AI agent's output against its task. " +
+        'Respond with only JSON {"passed": boolean, "feedback": string}. ' +
+        'passed=true only if the output is correct, relevant, and complete; ignore stylistic differences. ' +
         'When passed=false, feedback must state precisely what is wrong and how to fix it.',
       prompt: this.buildPrompt(task, taskType, output),
       temperature: 0,
+      maxTokens: VerificationEngine.MAX_VERDICT_TOKENS,
       jsonOutput: true,
     });
 

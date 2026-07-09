@@ -7,7 +7,7 @@ import {
 } from '../llm/openai-chat-completion.provider';
 
 @Injectable()
-export class FireworksProvider extends OpenAiChatCompletionProvider {
+export class LocalLlmProvider extends OpenAiChatCompletionProvider {
   constructor(
     private readonly config: ConfigService,
     logger: LoggerService,
@@ -16,12 +16,7 @@ export class FireworksProvider extends OpenAiChatCompletionProvider {
   }
 
   protected get target(): OpenAiChatCompletionTarget {
-    const { apiKey, allowedModels, baseUrl } = this.config.fireworks;
-    return {
-      providerName: 'Fireworks',
-      baseUrl,
-      model: allowedModels[0],
-      apiKey,
-    };
+    const { baseUrl, model } = this.config.localLlm;
+    return { providerName: 'Local LLM', baseUrl, model };
   }
 }

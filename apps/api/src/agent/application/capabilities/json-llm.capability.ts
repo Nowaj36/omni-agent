@@ -1,7 +1,10 @@
 import { ZodType } from 'zod';
 import { AgentTask, TaskOutput, TaskType } from '../../../core/domain/task';
 import { CapabilityError } from '../../../core/errors';
-import { Capability } from '../../../core/interfaces/capability.interface';
+import {
+  Capability,
+  VerificationMode,
+} from '../../../core/interfaces/capability.interface';
 import { LlmProvider } from '../../../core/interfaces/llm-provider.interface';
 
 export interface CapabilityPrompt {
@@ -18,6 +21,10 @@ export abstract class JsonLlmCapability<TOutput extends TaskOutput>
   protected constructor(protected readonly llm: LlmProvider) {}
 
   abstract canHandle(task: AgentTask): boolean;
+
+  verificationMode(_task: AgentTask): VerificationMode {
+    return 'llm';
+  }
 
   protected abstract buildPrompt(task: AgentTask): CapabilityPrompt;
 

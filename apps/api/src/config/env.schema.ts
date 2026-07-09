@@ -31,6 +31,8 @@ const envObjectSchema = z.object({
       message: 'ALLOWED_MODELS must contain at least one model ID',
     }),
   FIREWORKS_BASE_URL: z.url().default('https://api.fireworks.ai/inference/v1'),
+  LLM_PROVIDER: z.enum(['fireworks', 'local']).default('fireworks'),
+  LOCAL_LLM_BASE_URL: z.url().default('http://localhost:8000/v1'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

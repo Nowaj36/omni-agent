@@ -3,7 +3,7 @@ import {
   CAPABILITIES,
   type Capability,
 } from '../core/interfaces/capability.interface';
-import { FireworksModule } from '../infrastructure/fireworks/fireworks.module';
+import { LlmModule } from '../infrastructure/llm/llm.module';
 import { AgentController } from './agent.controller';
 import { AgentOrchestrator } from './application/agent-orchestrator';
 import { ClassificationCapability } from './application/capabilities/classification.capability';
@@ -18,7 +18,7 @@ import { TaskRouter } from './application/task-router';
 import { VerificationEngine } from './application/verification-engine';
 
 @Module({
-  imports: [FireworksModule],
+  imports: [LlmModule],
   controllers: [AgentController],
   providers: [
     QaCapability,

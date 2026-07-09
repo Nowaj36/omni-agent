@@ -3,6 +3,7 @@ import {
   AppConfig,
   BatchConfig,
   FireworksConfig,
+  LocalLlmConfig,
   toAppConfig,
 } from './app.config';
 import { envSchema } from './env.schema';
@@ -31,8 +32,16 @@ export class ConfigService {
     return this.config.agentMode;
   }
 
+  get llmProvider(): AppConfig['llmProvider'] {
+    return this.config.llmProvider;
+  }
+
   get fireworks(): FireworksConfig {
     return this.config.fireworks;
+  }
+
+  get localLlm(): LocalLlmConfig {
+    return this.config.localLlm;
   }
 
   get batch(): BatchConfig {

@@ -2,7 +2,11 @@ import { Test } from '@nestjs/testing';
 import { LoggerService } from '../../common/logger/logger.service';
 import { AgentTask, QaOutput } from '../../core/domain/task';
 import { VerificationResult } from '../../core/domain/verification';
-import { Capability } from '../../core/interfaces/capability.interface';
+import { VerificationError } from '../../core/errors';
+import {
+  Capability,
+  VerificationMode,
+} from '../../core/interfaces/capability.interface';
 import { AgentOrchestrator } from './agent-orchestrator';
 import { TaskRouter } from './task-router';
 import { VerificationEngine } from './verification-engine';
@@ -12,7 +16,10 @@ describe('AgentOrchestrator', () => {
   const firstOutput: QaOutput = { answer: '5' };
   const correctedOutput: QaOutput = { answer: '4' };
 
-  async function setup(verdicts: VerificationResult[]) {
+  async function setup(
+    verdicts: readonly (VerificationResult | Error)[],
+    verificationMode: VerificationMode = 'llm',
+  ) {
     const execute = jest
       .fn<Promise<QaOutput>, [AgentTask, string?]>()
       .mockResolvedValueOnce(firstOutput)
@@ -22,10 +29,15 @@ describe('AgentOrchestrator', () => {
       canHandle: () => true,
       execute,
       validate: () => firstOutput,
+      verificationMode: () => verificationMode,
     };
     const verify = jest.fn<Promise<VerificationResult>, unknown[]>();
     for (const verdict of verdicts) {
-      verify.mockResolvedValueOnce(verdict);
+      if (verdict instanceof Error) {
+        verify.mockRejectedValueOnce(verdict);
+      } else {
+        verify.mockResolvedValueOnce(verdict);
+      }
     }
 
     const moduleRef = await Test.createTestingModule({
@@ -92,5 +104,50 @@ describe('AgentOrchestrator', () => {
       feedback: 'Still wrong.',
     });
     expect(execute).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips LLM verification when the capability validates locally', async () => {
+    const { orchestrator, execute, verify } = await setup([], 'local');
+
+    const result = await orchestrator.run(task);
+
+    expect(result.output).toEqual(firstOutput);
+    expect(result.verification).toEqual({
+      passed: true,
+      attempts: 1,
+      feedback: undefined,
+    });
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(verify).not.toHaveBeenCalled();
+  });
+
+  it('keeps the output without retrying when the verifier itself fails', async () => {
+    const { orchestrator, execute, verify } = await setup([
+      new VerificationError('Verifier returned non-JSON output'),
+    ]);
+
+    const result = await orchestrator.run(task);
+
+    expect(result.output).toEqual(firstOutput);
+    expect(result.verification.passed).toBe(false);
+    expect(result.verification.attempts).toBe(1);
+    expect(result.verification.feedback).toContain(
+      'Verification was unavailable',
+    );
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(verify).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry when a failed verdict has no actionable feedback', async () => {
+    const { orchestrator, execute } = await setup([
+      { passed: false, feedback: '  ' },
+    ]);
+
+    const result = await orchestrator.run(task);
+
+    expect(result.output).toEqual(firstOutput);
+    expect(result.verification.passed).toBe(false);
+    expect(result.verification.attempts).toBe(1);
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 });

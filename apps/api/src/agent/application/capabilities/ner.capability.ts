@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { AgentTask, ENTITY_TYPES, NerOutput } from '../../../core/domain/task';
 import { CapabilityError } from '../../../core/errors';
+import { VerificationMode } from '../../../core/interfaces/capability.interface';
 import {
   LLM_PROVIDER,
   type LlmProvider,
@@ -39,6 +40,12 @@ export class NamedEntityRecognitionCapability extends JsonLlmCapability<NerOutpu
 
   canHandle(task: AgentTask): boolean {
     return ACTION_KEYWORDS.test(task.input) && ENTITY_KEYWORDS.test(task.input);
+  }
+
+  // execute() already enforces verbatim spans and the entity-type enum, the
+  // strongest checks available for NER, so LLM verification is skipped.
+  override verificationMode(): VerificationMode {
+    return 'local';
   }
 
   override async execute(

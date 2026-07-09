@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { AgentTask, MathOutput } from '../../../core/domain/task';
+import { VerificationMode } from '../../../core/interfaces/capability.interface';
 import {
   LLM_PROVIDER,
   type LlmProvider,
 } from '../../../core/interfaces/llm-provider.interface';
+import { evaluateArithmetic } from './arithmetic-evaluator';
 import { CapabilityPrompt, JsonLlmCapability } from './json-llm.capability';
 
 const mathOutputSchema = z.object({ result: z.string().min(1) });
@@ -28,6 +30,28 @@ export class MathCapability extends JsonLlmCapability<MathOutput> {
 
   canHandle(task: AgentTask): boolean {
     return MATH_KEYWORDS.test(task.input) || MATH_EXPRESSION.test(task.input);
+  }
+
+  override async execute(
+    task: AgentTask,
+    feedback?: string,
+  ): Promise<MathOutput> {
+    const local = this.resolveLocally(task);
+    if (local !== undefined) {
+      return { result: local };
+    }
+    return super.execute(task, feedback);
+  }
+
+  override verificationMode(task: AgentTask): VerificationMode {
+    return this.resolveLocally(task) === undefined ? 'llm' : 'local';
+  }
+
+  // Plain arithmetic is computed deterministically, so it needs neither a
+  // generation call nor an LLM verification pass. Context can change the
+  // meaning of the expression, so it always goes to the LLM.
+  private resolveLocally(task: AgentTask): string | undefined {
+    return task.context ? undefined : evaluateArithmetic(task.input);
   }
 
   protected buildPrompt(task: AgentTask): CapabilityPrompt {

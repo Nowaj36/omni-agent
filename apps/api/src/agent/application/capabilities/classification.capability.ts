@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { AgentTask, ClassificationOutput } from '../../../core/domain/task';
 import { CapabilityError } from '../../../core/errors';
+import { VerificationMode } from '../../../core/interfaces/capability.interface';
 import {
   LLM_PROVIDER,
   type LlmProvider,
@@ -21,6 +22,12 @@ export class ClassificationCapability extends JsonLlmCapability<ClassificationOu
 
   canHandle(task: AgentTask): boolean {
     return (task.labels?.length ?? 0) > 0;
+  }
+
+  // execute() already rejects any label outside the allowed set, so the
+  // output space is fully constrained without an LLM verification pass.
+  override verificationMode(): VerificationMode {
+    return 'local';
   }
 
   override async execute(

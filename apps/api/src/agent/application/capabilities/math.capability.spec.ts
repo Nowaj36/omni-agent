@@ -80,17 +80,58 @@ describe('MathCapability', () => {
     }
   });
 
+  describe('local evaluation', () => {
+    it('computes plain arithmetic without calling the provider', async () => {
+      const { capability, complete } = setup();
+
+      const output = await capability.execute({
+        input: 'What is 12 * (3 + 4)?',
+      });
+
+      expect(output).toEqual({ result: '84' });
+      expect(complete).not.toHaveBeenCalled();
+    });
+
+    it('reports local verification for locally computed arithmetic', () => {
+      const { capability } = setup();
+      expect(capability.verificationMode({ input: '2 + 2' })).toBe('local');
+    });
+
+    it('reports llm verification for word problems', () => {
+      const { capability } = setup();
+      expect(
+        capability.verificationMode({
+          input: 'Calculate the total cost of 3 items at 4.50 each',
+        }),
+      ).toBe('llm');
+    });
+
+    it('sends arithmetic to the provider when context is present', async () => {
+      const { capability, complete } = setup('{"result": "84"}');
+      const task = { input: '12 * (3 + 4)', context: 'Use modulo 10.' };
+
+      await capability.execute(task);
+
+      expect(complete).toHaveBeenCalledTimes(1);
+      expect(capability.verificationMode(task)).toBe('llm');
+    });
+  });
+
   describe('execute', () => {
     it('returns the parsed result from the provider', async () => {
       const { capability, complete } = setup('{"result": "4"}');
 
-      const output = await capability.execute({ input: 'What is 2 + 2?' });
+      const output = await capability.execute({
+        input: 'What is the probability of rolling two sixes?',
+      });
 
       expect(output).toEqual({ result: '4' });
       expect(complete).toHaveBeenCalledTimes(1);
       const request = complete.mock.calls[0][0];
       expect(request.jsonOutput).toBe(true);
-      expect(request.prompt).toContain('What is 2 + 2?');
+      expect(request.prompt).toContain(
+        'What is the probability of rolling two sixes?',
+      );
     });
 
     it('includes task context in the prompt when present', async () => {
@@ -110,7 +151,7 @@ describe('MathCapability', () => {
       const { capability, complete } = setup();
 
       await capability.execute(
-        { input: 'What is 2 + 2?' },
+        { input: 'What is the square root of 144?' },
         'The result is wrong.',
       );
 
@@ -123,7 +164,7 @@ describe('MathCapability', () => {
       const { capability } = setup('four');
 
       await expect(
-        capability.execute({ input: 'What is 2 + 2?' }),
+        capability.execute({ input: 'What is the square root of 144?' }),
       ).rejects.toThrow(CapabilityError);
     });
   });
