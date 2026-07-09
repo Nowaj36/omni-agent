@@ -5,6 +5,7 @@ export const TASK_TYPES = [
   'math',
   'ner',
   'codegen',
+  'debug',
 ] as const;
 
 export type TaskType = (typeof TASK_TYPES)[number];
@@ -61,13 +62,24 @@ export interface CodeGenerationOutput {
   readonly code: string;
 }
 
+export interface CodeIssue {
+  readonly message: string;
+}
+
+export interface CodeDebuggingOutput {
+  readonly language: CodeLanguage;
+  readonly issues: readonly CodeIssue[];
+  readonly fixedCode: string;
+}
+
 export type TaskOutput =
   | QaOutput
   | SummarizationOutput
   | ClassificationOutput
   | MathOutput
   | NerOutput
-  | CodeGenerationOutput;
+  | CodeGenerationOutput
+  | CodeDebuggingOutput;
 
 export interface VerificationReport {
   readonly passed: boolean;

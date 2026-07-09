@@ -10,16 +10,12 @@ import {
   LLM_PROVIDER,
   type LlmProvider,
 } from '../../../core/interfaces/llm-provider.interface';
+import { namedLanguages, plainSourceCode } from './code-language';
 import { CapabilityPrompt, JsonLlmCapability } from './json-llm.capability';
 
 const codeGenerationOutputSchema = z.object({
   language: z.enum(CODE_LANGUAGES),
-  code: z
-    .string()
-    .min(1)
-    .refine((code) => !code.trimStart().startsWith('```'), {
-      message: 'code must be plain source without a markdown fence',
-    }),
+  code: plainSourceCode,
 });
 
 const ACTION_KEYWORDS =
@@ -46,9 +42,7 @@ export class CodeGenerationCapability extends JsonLlmCapability<CodeGenerationOu
     feedback?: string,
   ): Promise<CodeGenerationOutput> {
     const output = await super.execute(task, feedback);
-    const requested = CODE_LANGUAGES.filter((language) =>
-      new RegExp(`\\b${language}\\b`, 'i').test(task.input),
-    );
+    const requested = namedLanguages(task.input);
     if (requested.length === 1 && output.language !== requested[0]) {
       throw new CapabilityError(
         `codegen returned ${output.language} code, but the task asked for ${requested[0]}`,

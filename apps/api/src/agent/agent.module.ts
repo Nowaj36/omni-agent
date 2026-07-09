@@ -7,6 +7,7 @@ import { FireworksModule } from '../infrastructure/fireworks/fireworks.module';
 import { AgentController } from './agent.controller';
 import { AgentOrchestrator } from './application/agent-orchestrator';
 import { ClassificationCapability } from './application/capabilities/classification.capability';
+import { CodeDebuggingCapability } from './application/capabilities/code-debugging.capability';
 import { CodeGenerationCapability } from './application/capabilities/code-generation.capability';
 import { MathCapability } from './application/capabilities/math.capability';
 import { NamedEntityRecognitionCapability } from './application/capabilities/ner.capability';
@@ -24,12 +25,14 @@ import { VerificationEngine } from './application/verification-engine';
     ClassificationCapability,
     MathCapability,
     NamedEntityRecognitionCapability,
+    CodeDebuggingCapability,
     CodeGenerationCapability,
     {
       provide: CAPABILITIES,
       useFactory: (
         classification: ClassificationCapability,
         ner: NamedEntityRecognitionCapability,
+        debug: CodeDebuggingCapability,
         codegen: CodeGenerationCapability,
         math: MathCapability,
         summarization: SummarizationCapability,
@@ -37,6 +40,7 @@ import { VerificationEngine } from './application/verification-engine';
       ): Capability[] => [
         classification,
         ner,
+        debug,
         codegen,
         math,
         summarization,
@@ -45,6 +49,7 @@ import { VerificationEngine } from './application/verification-engine';
       inject: [
         ClassificationCapability,
         NamedEntityRecognitionCapability,
+        CodeDebuggingCapability,
         CodeGenerationCapability,
         MathCapability,
         SummarizationCapability,
