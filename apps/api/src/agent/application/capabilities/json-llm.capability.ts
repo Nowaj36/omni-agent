@@ -34,6 +34,7 @@ export abstract class JsonLlmCapability<TOutput extends TaskOutput>
       system,
       prompt: this.withFeedback(prompt, feedback),
       jsonOutput: true,
+      capability: this.type,
     });
     return this.validate(this.parseJson(response.text));
   }
