@@ -18,10 +18,18 @@ const envObjectSchema = z.object({
   BATCH_OUTPUT_PATH: z.string().min(1).default('/output/results.json'),
   PORT: z.coerce.number().int().positive().default(3000),
   FIREWORKS_API_KEY: z.string().min(1, 'FIREWORKS_API_KEY is required'),
-  FIREWORKS_MODEL: z
+  ALLOWED_MODELS: z
     .string()
-    .min(1)
-    .default('accounts/fireworks/models/llama-v3p3-70b-instruct'),
+    .min(1, 'ALLOWED_MODELS is required')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((model) => model.trim())
+        .filter((model) => model.length > 0),
+    )
+    .refine((models) => models.length > 0, {
+      message: 'ALLOWED_MODELS must contain at least one model ID',
+    }),
   FIREWORKS_BASE_URL: z.url().default('https://api.fireworks.ai/inference/v1'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])

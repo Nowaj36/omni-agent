@@ -25,7 +25,8 @@ export class FireworksProvider implements LlmProvider {
   ) {}
 
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
-    const { model, baseUrl } = this.config.fireworks;
+    const { allowedModels, baseUrl } = this.config.fireworks;
+    const model = allowedModels[0];
     const startedAt = Date.now();
 
     const payload = await this.post(`${baseUrl}/chat/completions`, {

@@ -2,7 +2,7 @@ import { Env } from './env.schema';
 
 export interface FireworksConfig {
   readonly apiKey: string;
-  readonly model: string;
+  readonly allowedModels: readonly string[];
   readonly baseUrl: string;
 }
 
@@ -32,7 +32,7 @@ export function toAppConfig(env: Env): AppConfig {
     },
     fireworks: {
       apiKey: env.FIREWORKS_API_KEY,
-      model: env.FIREWORKS_MODEL,
+      allowedModels: env.ALLOWED_MODELS,
       baseUrl: env.FIREWORKS_BASE_URL,
     },
   };
