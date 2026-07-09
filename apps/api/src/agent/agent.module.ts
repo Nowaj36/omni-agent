@@ -32,5 +32,6 @@ import { VerificationEngine } from './application/verification-engine';
     VerificationEngine,
     AgentOrchestrator,
   ],
+  exports: [AgentOrchestrator],
 })
 export class AgentModule {}

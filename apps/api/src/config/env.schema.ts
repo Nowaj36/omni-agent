@@ -13,6 +13,9 @@ const envObjectSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
+  AGENT_MODE: z.enum(['server', 'batch']).default('server'),
+  BATCH_INPUT_PATH: z.string().min(1).default('/input/tasks.json'),
+  BATCH_OUTPUT_PATH: z.string().min(1).default('/output/results.json'),
   PORT: z.coerce.number().int().positive().default(3000),
   FIREWORKS_API_KEY: z.string().min(1, 'FIREWORKS_API_KEY is required'),
   FIREWORKS_MODEL: z
