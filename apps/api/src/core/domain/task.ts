@@ -4,6 +4,7 @@ export const TASK_TYPES = [
   'classification',
   'math',
   'ner',
+  'codegen',
 ] as const;
 
 export type TaskType = (typeof TASK_TYPES)[number];
@@ -51,12 +52,22 @@ export interface NerOutput {
   readonly entities: readonly NamedEntity[];
 }
 
+export const CODE_LANGUAGES = ['javascript', 'typescript', 'python'] as const;
+
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
+
+export interface CodeGenerationOutput {
+  readonly language: CodeLanguage;
+  readonly code: string;
+}
+
 export type TaskOutput =
   | QaOutput
   | SummarizationOutput
   | ClassificationOutput
   | MathOutput
-  | NerOutput;
+  | NerOutput
+  | CodeGenerationOutput;
 
 export interface VerificationReport {
   readonly passed: boolean;
