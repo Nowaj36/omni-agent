@@ -42,7 +42,7 @@ describe('BatchRunner', () => {
         },
         {
           provide: LoggerService,
-          useValue: { log: jest.fn(), error: jest.fn() },
+          useValue: { log: jest.fn(), error: jest.fn(), debug: jest.fn() },
         },
       ],
     }).compile();
@@ -54,12 +54,12 @@ describe('BatchRunner', () => {
     return JSON.parse(await readFile(outputPath, 'utf8'));
   }
 
-  it('processes every task and writes results in input order', async () => {
+  it('processes every task and writes harness-shaped results in input order', async () => {
     await writeFile(
       inputPath,
       JSON.stringify([
-        { id: 'task-1', type: 'qa', input: 'What is 2 + 2?' },
-        { id: 'task-2', type: 'summarization', input: 'Long text here.' },
+        { task_id: 't1', prompt: 'What is 2 + 2?' },
+        { task_id: 't2', prompt: 'Summarise this text in one sentence.' },
       ]),
     );
     const run = jest
@@ -70,29 +70,48 @@ describe('BatchRunner', () => {
     await runner.run();
 
     const results = await readResults();
-    expect(results).toHaveLength(2);
-    expect(results[0]).toMatchObject({
-      index: 0,
-      id: 'task-1',
-      status: 'completed',
-      taskType: 'qa',
-      output: { answer: '4' },
-    });
-    expect(run).toHaveBeenNthCalledWith(1, {
-      type: 'qa',
-      input: 'What is 2 + 2?',
+    expect(results).toEqual([
+      { task_id: 't1', answer: '4' },
+      { task_id: 't2', answer: '4' },
+    ]);
+    expect(run).toHaveBeenNthCalledWith(1, { input: 'What is 2 + 2?' });
+    expect(run).toHaveBeenNthCalledWith(2, {
+      input: 'Summarise this text in one sentence.',
     });
   });
 
-  it('records a failure for a task that throws and keeps processing', async () => {
+  it('flattens structured capability output into an answer string', async () => {
     await writeFile(
       inputPath,
-      JSON.stringify({
-        tasks: [
-          { id: 1, type: 'qa', input: 'First task' },
-          { id: 2, type: 'qa', input: 'Second task' },
+      JSON.stringify([{ task_id: 't1', prompt: 'Extract entities.' }]),
+    );
+    const run = jest.fn<Promise<AgentResult>, [AgentTask]>().mockResolvedValue({
+      taskType: 'ner',
+      output: {
+        entities: [
+          { text: 'Maria Sanchez', type: 'person' },
+          { text: 'Berlin', type: 'location' },
         ],
-      }),
+      },
+      verification: { passed: true, attempts: 1 },
+    });
+    const { runner } = await setup(run);
+
+    await runner.run();
+
+    const results = await readResults();
+    expect(results).toEqual([
+      { task_id: 't1', answer: 'Maria Sanchez (person), Berlin (location)' },
+    ]);
+  });
+
+  it('writes a fallback answer for a task that throws and keeps processing', async () => {
+    await writeFile(
+      inputPath,
+      JSON.stringify([
+        { task_id: 't1', prompt: 'First task' },
+        { task_id: 't2', prompt: 'Second task' },
+      ]),
     );
     const run = jest
       .fn<Promise<AgentResult>, [AgentTask]>()
@@ -103,12 +122,10 @@ describe('BatchRunner', () => {
     await runner.run();
 
     const results = await readResults();
-    expect(results[0]).toMatchObject({
-      id: 1,
-      status: 'failed',
-      error: { message: 'model returned garbage' },
-    });
-    expect(results[1]).toMatchObject({ id: 2, status: 'completed' });
+    expect(results).toEqual([
+      { task_id: 't1', answer: 'Unable to produce an answer for this task.' },
+      { task_id: 't2', answer: '4' },
+    ]);
   });
 
   it('throws a WorkflowError when the input file is missing', async () => {
@@ -120,7 +137,7 @@ describe('BatchRunner', () => {
   });
 
   it('throws a WorkflowError when the input file has an invalid shape', async () => {
-    await writeFile(inputPath, JSON.stringify([{ input: '' }]));
+    await writeFile(inputPath, JSON.stringify([{ prompt: 'No task id' }]));
     const run = jest.fn<Promise<AgentResult>, [AgentTask]>();
     const { runner } = await setup(run);
 

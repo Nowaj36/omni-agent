@@ -4,8 +4,11 @@ import { Injectable } from '@nestjs/common';
 import { AgentOrchestrator } from '../agent/application/agent-orchestrator';
 import { LoggerService } from '../common/logger/logger.service';
 import { ConfigService } from '../config/config.service';
-import { DomainError, WorkflowError } from '../core/errors';
+import { WorkflowError } from '../core/errors';
+import { formatAnswer } from './answer-formatter';
 import { BatchTask, BatchTaskResult, batchInputSchema } from './batch-task.dto';
+
+const FALLBACK_ANSWER = 'Unable to produce an answer for this task.';
 
 @Injectable()
 export class BatchRunner {
@@ -24,14 +27,13 @@ export class BatchRunner {
     );
 
     const results: BatchTaskResult[] = [];
-    for (const [index, task] of tasks.entries()) {
-      results.push(await this.runTask(task, index));
+    for (const task of tasks) {
+      results.push(await this.runTask(task));
     }
 
     await this.writeResults(outputPath, results);
-    const failed = results.filter((result) => result.status === 'failed');
     this.logger.log(
-      `Wrote ${results.length} result(s) to ${outputPath} (${failed.length} failed)`,
+      `Wrote ${results.length} result(s) to ${outputPath}`,
       BatchRunner.name,
     );
   }
@@ -68,30 +70,24 @@ export class BatchRunner {
     return parsed.data;
   }
 
-  private async runTask(
-    task: BatchTask,
-    index: number,
-  ): Promise<BatchTaskResult> {
-    const { id, ...agentTask } = task;
+  private async runTask(task: BatchTask): Promise<BatchTaskResult> {
     try {
-      const result = await this.orchestrator.run(agentTask);
-      return { index, id, status: 'completed', ...result };
+      const result = await this.orchestrator.run({ input: task.prompt });
+      this.logger.debug(
+        `Task ${task.task_id} completed by ${result.taskType} ` +
+          `(verification ${result.verification.passed ? 'passed' : 'failed'} ` +
+          `after ${result.verification.attempts} attempt(s))`,
+        BatchRunner.name,
+      );
+      return { task_id: task.task_id, answer: formatAnswer(result.output) };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Task ${id ?? index} failed: ${message}`,
+        `Task ${task.task_id} failed: ${message}`,
         undefined,
         BatchRunner.name,
       );
-      return {
-        index,
-        id,
-        status: 'failed',
-        error: {
-          code: error instanceof DomainError ? error.code : 'UNEXPECTED_ERROR',
-          message,
-        },
-      };
+      return { task_id: task.task_id, answer: FALLBACK_ANSWER };
     }
   }
 
