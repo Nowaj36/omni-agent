@@ -117,12 +117,12 @@ export class HybridLlmProvider implements LlmProvider {
     switch (capability) {
       case 'classification':
       case 'ner':
+      case 'summarization':
         return this.local;
       // Deterministic math never reaches the provider (the capability
       // resolves it locally), so a math request here is the LLM fallback.
       case 'math':
       case 'qa':
-      case 'summarization':
       case 'reasoning':
       case 'codegen':
       case 'debug':
@@ -131,7 +131,8 @@ export class HybridLlmProvider implements LlmProvider {
   }
 
   // Requests without a capability or verification tag keep the
-  // env-configured provider and never fall back.
+  // env-configured provider and never fall back; 'hybrid' sends
+  // them to Fireworks, the same family the per-capability default uses.
   private get delegate(): LlmProvider {
     return this.config.llmProvider === 'local' ? this.local : this.fireworks;
   }

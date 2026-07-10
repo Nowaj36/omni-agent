@@ -43,10 +43,9 @@ describe('HybridLlmProvider', () => {
   }
 
   describe('capability routing', () => {
-    const localRouted: TaskType[] = ['classification', 'ner'];
+    const localRouted: TaskType[] = ['classification', 'ner', 'summarization'];
     const fireworksRouted: TaskType[] = [
       'qa',
-      'summarization',
       'reasoning',
       'debug',
       'codegen',
@@ -231,6 +230,101 @@ describe('HybridLlmProvider', () => {
       });
       expect(fireworksComplete).toHaveBeenCalledTimes(1);
       expect(localComplete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('summarization routed local-first', () => {
+    function summarizationRequest(): CompletionRequest {
+      return {
+        system: 'system',
+        prompt: 'prompt',
+        jsonOutput: true,
+        capability: 'summarization',
+      };
+    }
+
+    function verifyRequest(): CompletionRequest {
+      return {
+        system: 'verifier',
+        prompt: 'verify this output',
+        jsonOutput: true,
+        verifying: 'summarization',
+      };
+    }
+
+    it('returns a successful local summary without touching Fireworks', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"summary": "A short faithful summary."}',
+      );
+
+      const result = await hybrid.complete(summarizationRequest());
+
+      expect(result).toEqual({
+        text: '{"summary": "A short faithful summary."}',
+      });
+      expect(localComplete).toHaveBeenCalledTimes(1);
+      expect(fireworksComplete).not.toHaveBeenCalled();
+    });
+
+    it('retries on Fireworks when the local provider throws ProviderError', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
+      fireworksComplete.mockResolvedValue({
+        text: '{"summary": "From Fireworks."}',
+      });
+
+      const result = await hybrid.complete(summarizationRequest());
+
+      expect(result).toEqual({ text: '{"summary": "From Fireworks."}' });
+      expect(fireworksComplete).toHaveBeenCalledWith(summarizationRequest());
+    });
+
+    it('retries on Fireworks when the local summary is low-confidence', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockResolvedValue({ text: '{"summary": "N/A"}' });
+      fireworksComplete.mockResolvedValue({
+        text: '{"summary": "From Fireworks."}',
+      });
+
+      const result = await hybrid.complete(summarizationRequest());
+
+      expect(result).toEqual({ text: '{"summary": "From Fireworks."}' });
+      expect(localComplete).toHaveBeenCalledTimes(1);
+      expect(fireworksComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('verifies a locally generated summary on the local provider', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup(
+        'fireworks',
+        '{"summary": "A short faithful summary."}',
+      );
+
+      await hybrid.complete(summarizationRequest());
+      await hybrid.complete(verifyRequest());
+
+      expect(localComplete).toHaveBeenCalledTimes(2);
+      expect(localComplete).toHaveBeenLastCalledWith(verifyRequest());
+      expect(fireworksComplete).not.toHaveBeenCalled();
+    });
+
+    it('verifies on Fireworks after a summarization fallback', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
+      fireworksComplete.mockResolvedValue({
+        text: '{"summary": "From Fireworks."}',
+      });
+
+      await hybrid.complete(summarizationRequest());
+      await hybrid.complete(verifyRequest());
+
+      expect(fireworksComplete).toHaveBeenCalledTimes(2);
+      expect(fireworksComplete).toHaveBeenLastCalledWith(verifyRequest());
+      expect(localComplete).toHaveBeenCalledTimes(1);
     });
   });
 

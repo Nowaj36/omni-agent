@@ -67,11 +67,11 @@ describe('envSchema', () => {
     ).toBe(true);
   });
 
-  it('defaults LLM_PROVIDER to fireworks and LOCAL_LLM_BASE_URL to localhost', () => {
+  it('defaults LLM_PROVIDER to hybrid and LOCAL_LLM_BASE_URL to localhost', () => {
     const result = parseEnv('model-a');
 
     expect(result.success).toBe(true);
-    expect(result.data?.LLM_PROVIDER).toBe('fireworks');
+    expect(result.data?.LLM_PROVIDER).toBe('hybrid');
     expect(result.data?.LOCAL_LLM_BASE_URL).toBe('http://localhost:8000/v1');
   });
 
