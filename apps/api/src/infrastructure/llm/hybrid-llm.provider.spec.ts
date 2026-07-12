@@ -1,7 +1,7 @@
 import { MathCapability } from '../../agent/application/capabilities/math.capability';
 import { LoggerService } from '../../common/logger/logger.service';
 import { ConfigService } from '../../config/config.service';
-import { TaskType } from '../../core/domain/task';
+import { TASK_TYPES, TaskType } from '../../core/domain/task';
 import { CapabilityError, ProviderError } from '../../core/errors';
 import {
   CompletionRequest,
@@ -43,21 +43,8 @@ describe('HybridLlmProvider', () => {
   }
 
   describe('capability routing', () => {
-    const localRouted: TaskType[] = [
-      'classification',
-      'ner',
-      'summarization',
-      'qa',
-    ];
-    const fireworksRouted: TaskType[] = [
-      'reasoning',
-      'debug',
-      'codegen',
-      'math',
-    ];
-
-    for (const capability of localRouted) {
-      it(`routes ${capability} to the local provider`, async () => {
+    for (const capability of TASK_TYPES) {
+      it(`tries the local provider first for ${capability}`, async () => {
         const { hybrid, localComplete, fireworksComplete } = setup();
 
         await hybrid.complete(request(capability));
@@ -65,26 +52,28 @@ describe('HybridLlmProvider', () => {
         expect(localComplete).toHaveBeenCalledWith(request(capability));
         expect(fireworksComplete).not.toHaveBeenCalled();
       });
-    }
 
-    for (const capability of fireworksRouted) {
-      it(`routes ${capability} to Fireworks and never calls Local`, async () => {
+      it(`falls back to Fireworks when the local provider fails for ${capability}`, async () => {
         const { hybrid, localComplete, fireworksComplete } = setup();
+        localComplete.mockRejectedValue(
+          new ProviderError('Local LLM request failed'),
+        );
+        fireworksComplete.mockResolvedValue({ text: 'from fireworks' });
 
-        await hybrid.complete(request(capability));
+        const result = await hybrid.complete(request(capability));
 
+        expect(result).toEqual({ text: 'from fireworks' });
         expect(fireworksComplete).toHaveBeenCalledWith(request(capability));
-        expect(localComplete).not.toHaveBeenCalled();
       });
     }
 
-    it('routes capability requests by the switch even when LLM_PROVIDER is local', async () => {
-      const { hybrid, localComplete, fireworksComplete } = setup('local');
+    it('routes capability requests local-first even when LLM_PROVIDER is fireworks', async () => {
+      const { hybrid, localComplete, fireworksComplete } = setup('fireworks');
 
       await hybrid.complete(request('codegen'));
 
-      expect(fireworksComplete).toHaveBeenCalledTimes(1);
-      expect(localComplete).not.toHaveBeenCalled();
+      expect(localComplete).toHaveBeenCalledTimes(1);
+      expect(fireworksComplete).not.toHaveBeenCalled();
     });
   });
 
@@ -127,16 +116,19 @@ describe('HybridLlmProvider', () => {
       expect(fireworksComplete).not.toHaveBeenCalled();
     });
 
-    it('propagates Fireworks failures on Fireworks-routed capabilities without touching Local', async () => {
+    it('propagates the Fireworks error when both providers fail', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
       fireworksComplete.mockRejectedValue(
         new ProviderError('Fireworks API error 500'),
       );
 
       await expect(hybrid.complete(request('codegen'))).rejects.toThrow(
-        ProviderError,
+        'Fireworks API error 500',
       );
-      expect(localComplete).not.toHaveBeenCalled();
+      expect(localComplete).toHaveBeenCalledTimes(1);
     });
 
     it('does not fall back for requests without a capability', async () => {
@@ -221,8 +213,11 @@ describe('HybridLlmProvider', () => {
       expect(fireworksComplete).toHaveBeenCalledTimes(1);
     });
 
-    it('returns Fireworks responses as-is even when they read uncertain', async () => {
+    it('returns fallback Fireworks responses as-is even when they read uncertain', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
       fireworksComplete.mockResolvedValue({
         text: '{"answer": "I cannot determine this from the context."}',
       });
@@ -232,8 +227,8 @@ describe('HybridLlmProvider', () => {
       expect(result).toEqual({
         text: '{"answer": "I cannot determine this from the context."}',
       });
+      expect(localComplete).toHaveBeenCalledTimes(1);
       expect(fireworksComplete).toHaveBeenCalledTimes(1);
-      expect(localComplete).not.toHaveBeenCalled();
     });
   });
 
@@ -452,6 +447,10 @@ describe('HybridLlmProvider', () => {
 
     it('verifies Fireworks-generated output on Fireworks', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup();
+      localComplete.mockRejectedValue(
+        new ProviderError('Local LLM request failed'),
+      );
+      fireworksComplete.mockResolvedValue({ text: '{"code": "print(1)"}' });
 
       await hybrid.complete(generationRequest('codegen'));
       await hybrid.complete(verifyRequest('codegen'));
@@ -460,7 +459,7 @@ describe('HybridLlmProvider', () => {
       expect(fireworksComplete).toHaveBeenLastCalledWith(
         verifyRequest('codegen'),
       );
-      expect(localComplete).not.toHaveBeenCalled();
+      expect(localComplete).toHaveBeenCalledTimes(1);
     });
 
     it('verifies on Fireworks after a local transport fallback', async () => {
@@ -513,7 +512,7 @@ describe('HybridLlmProvider', () => {
       expect(fireworksComplete).toHaveBeenCalledTimes(1);
     });
 
-    it('follows the routing switch when no generation has been observed', async () => {
+    it('verifies locally when no generation has been observed', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup(
         'fireworks',
         '{"passed": true, "feedback": ""}',
@@ -523,7 +522,8 @@ describe('HybridLlmProvider', () => {
       await hybrid.complete(verifyRequest('codegen'));
 
       expect(localComplete).toHaveBeenCalledWith(verifyRequest('ner'));
-      expect(fireworksComplete).toHaveBeenCalledWith(verifyRequest('codegen'));
+      expect(localComplete).toHaveBeenCalledWith(verifyRequest('codegen'));
+      expect(fireworksComplete).not.toHaveBeenCalled();
     });
 
     it('falls back to Fireworks when the local verifier is unreachable', async () => {
@@ -579,7 +579,7 @@ describe('HybridLlmProvider', () => {
       expect(fireworksComplete).not.toHaveBeenCalled();
     });
 
-    it('non-deterministic math uses Fireworks', async () => {
+    it('non-deterministic math tries the local provider first', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup(
         'fireworks',
         '{"result": "1/36"}',
@@ -591,8 +591,8 @@ describe('HybridLlmProvider', () => {
       });
 
       expect(output).toEqual({ result: '1/36' });
-      expect(fireworksComplete).toHaveBeenCalledTimes(1);
-      expect(localComplete).not.toHaveBeenCalled();
+      expect(localComplete).toHaveBeenCalledTimes(1);
+      expect(fireworksComplete).not.toHaveBeenCalled();
     });
   });
 });
