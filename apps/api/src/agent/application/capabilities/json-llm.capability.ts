@@ -10,6 +10,8 @@ import { LlmProvider } from '../../../core/interfaces/llm-provider.interface';
 export interface CapabilityPrompt {
   readonly system: string;
   readonly prompt: string;
+  /** Overrides the provider's default sampling temperature. */
+  readonly temperature?: number;
 }
 
 export abstract class JsonLlmCapability<TOutput extends TaskOutput>
@@ -29,10 +31,11 @@ export abstract class JsonLlmCapability<TOutput extends TaskOutput>
   protected abstract buildPrompt(task: AgentTask): CapabilityPrompt;
 
   async execute(task: AgentTask, feedback?: string): Promise<TOutput> {
-    const { system, prompt } = this.buildPrompt(task);
+    const { system, prompt, temperature } = this.buildPrompt(task);
     const response = await this.llm.complete({
       system,
       prompt: this.withFeedback(prompt, feedback),
+      temperature,
       jsonOutput: true,
       capability: this.type,
     });

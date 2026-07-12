@@ -18,6 +18,18 @@ const envObjectSchema = z.object({
   BATCH_OUTPUT_PATH: z.string().min(1).default('/output/results.json'),
   PORT: z.coerce.number().int().positive().default(3000),
   FIREWORKS_API_KEY: z.string().min(1, 'FIREWORKS_API_KEY is required'),
+  FIREWORKS_MODELS: z
+    .string()
+    .min(1, 'FIREWORKS_MODELS is required')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((model) => model.trim())
+        .filter((model) => model.length > 0),
+    )
+    .refine((models) => models.length > 0, {
+      message: 'FIREWORKS_MODELS must contain at least one model ID',
+    }),
   ALLOWED_MODELS: z
     .string()
     .min(1, 'ALLOWED_MODELS is required')
