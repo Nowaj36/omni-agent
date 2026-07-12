@@ -13,7 +13,7 @@
   },
   {
     "task_id": "4",
-    "prompt": "Summarize the following in exactly one sentence: [your own sample paragraph here]."
+    "prompt": "Summarize the following in exactly one sentence: The Great Barrier Reef, stretching more than 2,300 kilometres along the coast of Queensland, Australia, is the world's largest coral reef system and supports thousands of marine species. In recent decades, rising ocean temperatures have triggered repeated mass bleaching events, and scientists warn that without substantial cuts to greenhouse gas emissions, much of the reef could be lost within this century."
   },
   {
     "task_id": "5",

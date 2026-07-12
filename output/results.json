@@ -1,7 +1,7 @@
 [
   {
     "task_id": "1",
-    "answer": "The capital of Australia is Canberra, and it is located near the Tasman Sea."
+    "answer": "The capital of Australia is Canberra, and it is near the Tasman Sea."
   },
   {
     "task_id": "2",
@@ -13,7 +13,7 @@
   },
   {
     "task_id": "4",
-    "answer": "This instruction details a previous error where an AI requested text to summarize instead of summarizing the provided text, and requests a corrected response that accurately summarizes the given paragraph in a single sentence."
+    "answer": "The Great Barrier Reef, the world's largest coral reef system located off the coast of Queensland, Australia, is threatened with potential loss this century due to repeated mass bleaching events caused by rising ocean temperatures."
   },
   {
     "task_id": "5",
@@ -21,7 +21,7 @@
   },
   {
     "task_id": "6",
-    "answer": "Issues found:\n- The function always returns the first element of the list, regardless of whether it's the maximum. It should iterate through the list to find the actual maximum value.\n\nFixed code:\ndef get_max(nums):\n  if not nums:\n    return None  # Handle empty list case\n  max_num = nums[0]\n  for num in nums:\n    if num > max_num:\n      max_num = num\n  return max_num"
+    "answer": "Issues found:\n- The function always returns the first element of the list, regardless of whether it's the maximum. It needs to iterate through the list and compare each element to find the maximum.\n\nFixed code:\ndef get_max(nums):\n  if not nums:\n    return None  # Handle empty list case\n  max_num = nums[0]\n  for num in nums:\n    if num > max_num:\n      max_num = num\n  return max_num"
   },
   {
     "task_id": "7",
