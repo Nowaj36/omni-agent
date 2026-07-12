@@ -118,11 +118,11 @@ export class HybridLlmProvider implements LlmProvider {
       case 'classification':
       case 'ner':
       case 'summarization':
+      case 'qa':
         return this.local;
       // Deterministic math never reaches the provider (the capability
       // resolves it locally), so a math request here is the LLM fallback.
       case 'math':
-      case 'qa':
       case 'reasoning':
       case 'codegen':
       case 'debug':

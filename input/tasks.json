@@ -1,34 +1,34 @@
 [
   {
-    "task_id": "practice-01",
+    "task_id": "1",
     "prompt": "What is the capital of Australia, and what body of water is it near?"
   },
   {
-    "task_id": "practice-02",
+    "task_id": "2",
     "prompt": "A store has 240 items. It sells 15% on Monday and 60 more on Tuesday. How many items remain?"
   },
   {
-    "task_id": "practice-03",
+    "task_id": "3",
     "prompt": "Classify the sentiment of this review: The battery life is great, but the screen scratches too easily."
   },
   {
-    "task_id": "practice-04",
+    "task_id": "4",
     "prompt": "Summarize the following in exactly one sentence: [your own sample paragraph here]."
   },
   {
-    "task_id": "practice-05",
+    "task_id": "5",
     "prompt": "Extract all named entities and their types from: Maria Sanchez joined Fireworks AI in Berlin last March."
   },
   {
-    "task_id": "practice-06",
+    "task_id": "6",
     "prompt": "This function should return the max of a list but has a bug: def get_max(nums): return nums[0]. Find and fix it."
   },
   {
-    "task_id": "practice-07",
+    "task_id": "7",
     "prompt": "Three friends, Sam, Jo, and Lee, each own a different pet: cat, dog, bird. Sam does not own the bird. Jo owns the dog. Who owns the cat?"
   },
   {
-    "task_id": "practice-08",
+    "task_id": "8",
     "prompt": "Write a Python function that returns the second-largest number in a list, handling duplicates correctly."
   }
 ]

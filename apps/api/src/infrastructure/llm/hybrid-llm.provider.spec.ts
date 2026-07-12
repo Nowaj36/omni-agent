@@ -43,9 +43,13 @@ describe('HybridLlmProvider', () => {
   }
 
   describe('capability routing', () => {
-    const localRouted: TaskType[] = ['classification', 'ner', 'summarization'];
-    const fireworksRouted: TaskType[] = [
+    const localRouted: TaskType[] = [
+      'classification',
+      'ner',
+      'summarization',
       'qa',
+    ];
+    const fireworksRouted: TaskType[] = [
       'reasoning',
       'debug',
       'codegen',
@@ -77,7 +81,7 @@ describe('HybridLlmProvider', () => {
     it('routes capability requests by the switch even when LLM_PROVIDER is local', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup('local');
 
-      await hybrid.complete(request('qa'));
+      await hybrid.complete(request('codegen'));
 
       expect(fireworksComplete).toHaveBeenCalledTimes(1);
       expect(localComplete).not.toHaveBeenCalled();
@@ -129,7 +133,7 @@ describe('HybridLlmProvider', () => {
         new ProviderError('Fireworks API error 500'),
       );
 
-      await expect(hybrid.complete(request('qa'))).rejects.toThrow(
+      await expect(hybrid.complete(request('codegen'))).rejects.toThrow(
         ProviderError,
       );
       expect(localComplete).not.toHaveBeenCalled();
@@ -223,7 +227,7 @@ describe('HybridLlmProvider', () => {
         text: '{"answer": "I cannot determine this from the context."}',
       });
 
-      const result = await hybrid.complete(jsonRequest('qa'));
+      const result = await hybrid.complete(jsonRequest('reasoning'));
 
       expect(result).toEqual({
         text: '{"answer": "I cannot determine this from the context."}',
@@ -449,11 +453,13 @@ describe('HybridLlmProvider', () => {
     it('verifies Fireworks-generated output on Fireworks', async () => {
       const { hybrid, localComplete, fireworksComplete } = setup();
 
-      await hybrid.complete(generationRequest('qa'));
-      await hybrid.complete(verifyRequest('qa'));
+      await hybrid.complete(generationRequest('codegen'));
+      await hybrid.complete(verifyRequest('codegen'));
 
       expect(fireworksComplete).toHaveBeenCalledTimes(2);
-      expect(fireworksComplete).toHaveBeenLastCalledWith(verifyRequest('qa'));
+      expect(fireworksComplete).toHaveBeenLastCalledWith(
+        verifyRequest('codegen'),
+      );
       expect(localComplete).not.toHaveBeenCalled();
     });
 
@@ -514,10 +520,10 @@ describe('HybridLlmProvider', () => {
       );
 
       await hybrid.complete(verifyRequest('ner'));
-      await hybrid.complete(verifyRequest('qa'));
+      await hybrid.complete(verifyRequest('codegen'));
 
       expect(localComplete).toHaveBeenCalledWith(verifyRequest('ner'));
-      expect(fireworksComplete).toHaveBeenCalledWith(verifyRequest('qa'));
+      expect(fireworksComplete).toHaveBeenCalledWith(verifyRequest('codegen'));
     });
 
     it('falls back to Fireworks when the local verifier is unreachable', async () => {
