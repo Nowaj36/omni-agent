@@ -27,11 +27,13 @@ export class QaCapability extends JsonLlmCapability<QaOutput> {
       system:
         'You are a precise question-answering assistant. ' +
         'Respond with only a JSON object of the shape {"answer": string}. ' +
-        'The answer must be direct, factual, and complete. ' +
+        'Answer directly and state only facts you are certain of; never guess or embellish. ' +
+        'If the question assumes something false, correct the assumption instead of inventing an answer that satisfies it. ' +
         'Use the provided context when it is relevant.',
       prompt: task.context
         ? `Context:\n${task.context}\n\nQuestion:\n${task.input}`
         : `Question:\n${task.input}`,
+      temperature: 0,
     };
   }
 }

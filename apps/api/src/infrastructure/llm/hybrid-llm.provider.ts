@@ -34,12 +34,7 @@ export class HybridLlmProvider implements LlmProvider {
     if (request.capability === undefined) {
       return this.delegate.complete(request);
     }
-    const provider = this.route(request.capability);
-    if (provider === this.local) {
-      return this.completeLocallyWithFallback(request, request.capability);
-    }
-    this.generationFamily.set(request.capability, provider);
-    return provider.complete(request);
+    return this.completeLocallyWithFallback(request, request.capability);
   }
 
   // Local inference failures (unreachable server, timeout, malformed or
@@ -87,8 +82,7 @@ export class HybridLlmProvider implements LlmProvider {
     request: CompletionRequest,
     generated: TaskType,
   ): Promise<CompletionResponse> {
-    const provider =
-      this.generationFamily.get(generated) ?? this.route(generated);
+    const provider = this.generationFamily.get(generated) ?? this.local;
     if (provider === this.local) {
       return this.verifyLocallyWithTransportFallback(request, generated);
     }
@@ -113,26 +107,9 @@ export class HybridLlmProvider implements LlmProvider {
     }
   }
 
-  private route(capability: TaskType): LlmProvider {
-    switch (capability) {
-      case 'classification':
-      case 'ner':
-      case 'summarization':
-        return this.local;
-      // Deterministic math never reaches the provider (the capability
-      // resolves it locally), so a math request here is the LLM fallback.
-      case 'math':
-      case 'qa':
-      case 'reasoning':
-      case 'codegen':
-      case 'debug':
-        return this.fireworks;
-    }
-  }
-
   // Requests without a capability or verification tag keep the
   // env-configured provider and never fall back; 'hybrid' sends
-  // them to Fireworks, the same family the per-capability default uses.
+  // them to Fireworks.
   private get delegate(): LlmProvider {
     return this.config.llmProvider === 'local' ? this.local : this.fireworks;
   }

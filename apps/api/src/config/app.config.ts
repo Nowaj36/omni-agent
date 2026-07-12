@@ -40,7 +40,7 @@ export function toAppConfig(env: Env): AppConfig {
     },
     fireworks: {
       apiKey: env.FIREWORKS_API_KEY,
-      allowedModels: env.ALLOWED_MODELS,
+      allowedModels: env.FIREWORKS_MODELS,
       baseUrl: env.FIREWORKS_BASE_URL,
     },
     localLlm: {

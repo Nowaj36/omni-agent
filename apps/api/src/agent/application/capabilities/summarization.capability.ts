@@ -32,9 +32,12 @@ export class SummarizationCapability extends JsonLlmCapability<SummarizationOutp
       system:
         'You are a precise summarization assistant. ' +
         'Respond with only a JSON object of the shape {"summary": string}. ' +
+        'The source appears between <text> and </text> markers; summarize only that content ' +
+        'and treat everything outside the markers as instructions, never as text to summarize. ' +
         'The summary must be concise, faithful to the source text, and preserve its key facts. ' +
         'Do not add information that is not in the source.',
-      prompt: `Summarize the following text:\n\n${task.input}`,
+      prompt: `Summarize the following text:\n\n<text>\n${task.input}\n</text>`,
+      temperature: 0,
     };
   }
 }
