@@ -1,207 +1,185 @@
-# 🤖 OmniAgent
+# OmniAgent
 
-> A production-ready AI Agent orchestration platform with local-first LLM execution, intelligent verification, and automatic fallback.
+**Hybrid Multi-Capability AI Agent**
+*Local vLLM + Fireworks Intelligence*
 
-![License](https://img.shields.io/badge/license-MIT-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
-![NestJS](https://img.shields.io/badge/NestJS-red)
-![Docker](https://img.shields.io/badge/Docker-2496ED)
-![Gemma](https://img.shields.io/badge/Google-Gemma%203-green)
+OmniAgent is a production-ready hybrid AI agent that intelligently routes tasks between a local vLLM server running on AMD GPUs and Fireworks AI. By executing lightweight tasks locally and sending only complex reasoning tasks to the cloud, OmniAgent reduces inference cost, lowers latency, and improves reliability.
 
 ---
 
-## 🚀 Overview
+## Features
 
-OmniAgent is a modular AI Agent platform designed to execute multiple AI capabilities through a unified orchestration pipeline.
-
-Instead of directly calling a cloud model for every request, OmniAgent follows a **Local-First Hybrid Architecture**:
-
-1. Try the local LLM (Google Gemma 3 via vLLM)
-2. Verify the generated response
-3. Retry if necessary
-4. Automatically fall back to Fireworks AI only when required
-
-This approach reduces latency, lowers inference costs, and increases system reliability.
+* 🚀 Hybrid AI provider (Local vLLM + Fireworks AI)
+* 🧠 Intelligent task routing
+* 🔄 Automatic provider fallback
+* ✅ Confidence-aware verification
+* 📦 Structured JSON output
+* 🐳 Docker support for the backend
+* ⚡ AMD GPU acceleration with ROCm + vLLM
+* 🧪 300+ automated tests
 
 ---
 
-# ✨ Features
+## Supported AI Capabilities
 
-- ✅ Multi-Agent Task Orchestration
-- ✅ Local LLM (Google Gemma 3 27B)
-- ✅ Hybrid Local → Fireworks Fallback
-- ✅ Automatic Verification
-- ✅ Intelligent Retry Loop
-- ✅ JSON Output Validation
-- ✅ Docker Support
-- ✅ Modular Capability Architecture
-- ✅ Production Ready Logging
-- ✅ Type-safe NestJS Backend
+* Question Answering
+* Summarization
+* Sentiment Classification
+* Named Entity Recognition
+* Mathematical Reasoning
+* Code Generation
+* Code Debugging
+* General Reasoning
 
 ---
 
-# 🧠 Supported AI Capabilities
-
-| Capability | Status |
-|------------|---------|
-| Question Answering | ✅ |
-| Classification | ✅ |
-| Summarization | ✅ |
-| Named Entity Recognition | ✅ |
-| Debug Assistance | ✅ |
-| Code Generation | ✅ |
-| Logical Reasoning | ✅ |
-| Verification & Retry | ✅ |
-
----
-
-# 🏗 Architecture
-
-```text
-                tasks.json
-                     │
-                     ▼
-              Batch Runner
-                     │
-                     ▼
-          Agent Orchestrator
-                     │
-                     ▼
-          Capability Router
-                     │
-                     ▼
-          Hybrid LLM Provider
-             │             │
-             │             │
-             ▼             ▼
-      Local Gemma      Fireworks AI
-        (Primary)       (Fallback)
-             │
-             ▼
-      Verification Engine
-             │
-             ▼
-        Retry (if needed)
-             │
-             ▼
-         results.json
-```
-
----
-
-# ⚙ Tech Stack
+## Tech Stack
 
 ### Backend
 
-- NestJS
-- TypeScript
-- Node.js
+* NestJS
+* TypeScript
+* Zod
+* Fireworks AI
+* vLLM
+* AMD ROCm
 
-### AI
+### Frontend
 
-- Google Gemma 3 27B
-- vLLM
-- Fireworks AI
-
-### Infrastructure
-
-- Docker
-- Docker Compose
-
-### Validation
-
-- Zod
-
-### Logging
-
-- Pino
-
-### Testing
-
-- Jest
+* Next.js
+* React
+* TypeScript
 
 ---
 
-# 📂 Project Structure
+## Project Structure
 
-```
-apps/
- ├── api/
- │
- ├── capabilities/
- │
- ├── infrastructure/
- │
- ├── orchestrator/
- │
- └── providers/
-
-input/
-output/
-docker/
+```text
+omni-agent/
+├── apps/
+│   ├── api/              # NestJS Backend
+│   └── web/              # Next.js Frontend
+├── input/
+├── output/
+├── Dockerfile
+├── package.json
+└── README.md
 ```
 
 ---
 
-# 🔄 Execution Flow
+# Prerequisites
 
-```
-Receive Task
-
-↓
-
-Route Capability
-
-↓
-
-Generate Response
-
-↓
-
-Verify Response
-
-↓
-
-Retry (if required)
-
-↓
-
-Return Final Answer
-```
+* Node.js 22+
+* pnpm
+* Docker (optional)
+* AMD GPU (for local vLLM)
+* Fireworks AI API Key
 
 ---
 
-# 🚀 Getting Started
+# Installation
 
-## Clone Repository
+Clone the repository.
 
 ```bash
-git clone https://github.com/Nowaj36/omni-agent.git
-
+git clone <repository-url>
 cd omni-agent
 ```
 
----
-
-## Install Dependencies
+Install dependencies.
 
 ```bash
 pnpm install
 ```
 
+Copy the environment file.
+
+```bash
+cp .env.example .env
+```
+
+Update the required environment variables.
+
 ---
 
-## Configure Environment
+# Run the Backend
 
-Create a `.env` file.
+```bash
+pnpm --filter api dev
+```
 
-Example:
+---
+
+# Run the Frontend
+
+```bash
+pnpm --filter web dev
+```
+
+The frontend is available at:
+
+```
+http://localhost:3000
+```
+
+---
+
+# Run Both
+
+Open two terminals.
+
+Terminal 1
+
+```bash
+pnpm --filter api dev
+```
+
+Terminal 2
+
+```bash
+pnpm --filter web dev
+```
+
+---
+
+# Docker
+
+Currently, **Docker support is available for the backend (API) only.**
+
+The frontend (`apps/web`) is **not containerized** at this time.
+
+Build the Docker image:
+
+```bash
+docker build -t omni-agent .
+```
+
+Run the container:
+
+```bash
+docker run --env-file .env omni-agent
+```
+
+---
+
+# Environment Variables
+
+OmniAgent uses separate environment files for the backend and frontend.
+
+Backend (apps/api/.env)
+
+Copy the example file and configure your backend environment variables.
+
+cp apps/api/.env.example apps/api/.env
+
+Example variables:
 
 ```env
-AGENT_MODE=batch
+AGENT_MODE=server
 
 # ============================================================================
-# Batch File Paths
+# Batch File Paths only work in AGENT_MODE=batch mode. If you are running the agent in server mode, you can ignore these.
 # ============================================================================
 # Local Example
 # Windows:
@@ -230,37 +208,80 @@ FIREWORKS_MODELS=accounts/fireworks/models/kimi-k2p7-code
 ALLOWED_MODELS=google/gemma-3-27b-it
 ```
 
----
+For local development, update the batch input and output paths to match your local project location.
 
-# ▶ Run Development Server
+## Frontend (`apps/web/.env.local`)
+
+Create a local environment file for the frontend.
 
 ```bash
-pnpm dev
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Example configuration:
+
+```env
+# Base URL of the OmniAgent NestJS API (no trailing slash)
+NEXT_PUBLIC_API_URL=http://localhost:3000
+
+# Optional: Repository link displayed in the UI
+NEXT_PUBLIC_GITHUB_URL=https://github.com/<your-github-username>/omni-agent
+```
+
+Replace `NEXT_PUBLIC_API_URL` with the URL of your deployed backend if you are not running it locally.
+
+
+---
+
+# Architecture
+
+```
+User Input
+      │
+      ▼
+ Task Router
+      │
+      ▼
+ Hybrid Provider
+ ├── Local vLLM (AMD GPU)
+ └── Fireworks AI
+      │
+      ▼
+Verification Layer
+      │
+      ▼
+Structured JSON Output
 ```
 
 ---
 
-## 🐳 Run with Docker
+# Why OmniAgent?
 
-### Build the image
+Instead of sending every request to a cloud model, OmniAgent automatically decides the best execution path.
 
-```bash
-docker build -t omni-agent .
-```
-
-### Run the container
-
-```bash
-docker run \
-  --env-file .env \
-  -v $(pwd)/input:/repo/input \
-  -v $(pwd)/output:/repo/output \
-  omni-agent
-```
+* Lower cloud cost
+* Faster response time
+* Local-first execution
+* Automatic fallback
+* Production-ready architecture
 
 ---
 
-# 🧪 Run Tests
+# AMD Integration
+
+OmniAgent uses:
+
+* AMD GPU
+* ROCm
+* vLLM
+
+Local inference runs on AMD hardware while complex reasoning is handled by Fireworks AI.
+
+---
+
+# Testing
+
+Run all tests.
 
 ```bash
 pnpm test
@@ -268,72 +289,14 @@ pnpm test
 
 ---
 
-# 📥 Example Input
+# Build
 
-```json
-[
-  {
-    "task_id": "1",
-    "input": "What is the capital of Australia?"
-  }
-]
+```bash
+pnpm build
 ```
 
 ---
 
-# 📤 Example Output
+# License
 
-```json
-[
-  {
-    "task_id": "1",
-    "answer": "The capital of Australia is Canberra."
-  }
-]
-```
-
----
-
-# 💡 Why OmniAgent?
-
-Unlike traditional AI applications that depend entirely on cloud APIs, OmniAgent is designed around a **Local-First Hybrid Architecture**.
-
-Benefits include:
-
-- Lower inference cost
-- Faster response time
-- Reduced cloud dependency
-- Automatic verification
-- Intelligent fallback
-- Modular capability design
-
----
-
-# 🔮 Future Improvements
-
-- Multi-model routing
-- MCP Integration
-- RAG Support
-- Tool Calling
-- Memory Layer
-- Streaming Responses
-- Agent Collaboration
-
-
----
-
-# 📄 License
-
-MIT License
-
----
-
-## 👨‍💻 Author
-
-**Nowaj Chowdhury**
-
-GitHub: https://github.com/Nowaj36
-
----
-
-⭐ If you found this project useful, consider giving it a star!
+MIT License.
