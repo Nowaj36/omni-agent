@@ -35,7 +35,6 @@ RUN pnpm install --frozen-lockfile --prod
 FROM node:22-alpine
 
 ENV NODE_ENV=production
-ENV AGENT_MODE=batch
 
 WORKDIR /repo/apps/api
 
