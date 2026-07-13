@@ -11,6 +11,11 @@
     "indentWidth": 2,
     "lineEnding": "lf"
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "javascript": {
     "parser": {
       "unsafeParameterDecoratorsEnabled": true
