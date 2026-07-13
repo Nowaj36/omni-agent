@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    var(--font-jetbrains-mono), ui-monospace, "Cascadia Code", "Fira Code",
+    monospace;
+
+  --color-background: #060609;
+  --color-surface: #0c0c12;
+  --color-amd: #ed1c24;
+  --color-amd-bright: #ff3b41;
+
+  --animate-gradient-drift: gradient-drift 22s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+
+  @keyframes gradient-drift {
+    0% {
+      transform: translate3d(-6%, -4%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(5%, 6%, 0) scale(1.12);
+    }
+    100% {
+      transform: translate3d(-3%, 4%, 0) scale(1.04);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgb(237 28 36 / 0.45);
+    }
+    50% {
+      opacity: 0.75;
+      box-shadow: 0 0 0 6px rgb(237 28 36 / 0);
+    }
+  }
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-slate-200);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: rgb(237 28 36 / 0.35);
+  color: white;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(100 116 139 / 0.4) transparent;
+}
